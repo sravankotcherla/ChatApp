@@ -1,0 +1,23 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Chat-express",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/chat-express/index.js",
+      "runtimeExecutable": "nodemon",
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "8082",
+        "allowedOrigins": "http://localhost:8081",
+        "MONGO_URI": "mongodb://localhost:27022/test",
+        "JWT_KEY": "asdfaaASDFAFOIUADLSFJ"
+      }
+    }
+  ]
+}

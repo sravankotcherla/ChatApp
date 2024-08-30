@@ -1,0 +1,8 @@
+Chats And Search Flow 
+
+1. Have an + icon next to search Bar
+2. Default search bar is to search Chats
+3. + is to add users
+4. when clicked on + icon
+        web : change place holder search users 
+        mobile : new screen
