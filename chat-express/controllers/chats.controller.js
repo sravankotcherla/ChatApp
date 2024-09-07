@@ -25,7 +25,7 @@ exports.getChats = (req, res) => {
           });
       },
       function (chats, done) {
-        const chatUsers = chats.reduce((curr, accum) => {
+        const chatUsers = chats.reduce((accum, curr) => {
           if (!accum.includes(curr.user_id)) {
             accum.push(curr.user_id);
           }
@@ -39,9 +39,9 @@ exports.getChats = (req, res) => {
           .then((users) => {
             chats = chats.map((chatItem) => {
               const chatUser = users.find(
-                (user) => user._id.toString() === chatItem.user_id
+                (user) => user._id.toString() === chatItem.user_id.toString()
               );
-              return { ...chatItem, ...chatUser };
+              return { ...chatItem, user: chatUser };
             });
             return done(null, chats);
           })
@@ -54,7 +54,7 @@ exports.getChats = (req, res) => {
       if (err) {
         res.status(400).send(err);
       }
-      return res.jonsp(chats);
+      return res.jsonp(chats);
     }
   );
 };
@@ -81,12 +81,13 @@ exports.updateChatDoc = (updatedFields, cb) => {
     });
 };
 
-exports.createChat = (chatBody, cb) => {
-  Chat.create(chatBody)
+exports.createChat = (req, res) => {
+  const chatUsers = req.body.users;
+  Chat.create({ users: chatUsers })
     .then((newChat) => {
-      cb(null, newChat);
+      return res.status(200).jsonp(newChat);
     })
     .catch((err) => {
-      cb(err);
+      return res.status(500).send("Error while creating chat " + err);
     });
 };

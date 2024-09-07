@@ -6,13 +6,16 @@ import { useSelector } from "react-redux";
 import { ApplicationState } from "../../redux/reducer";
 import { MessagesList } from "../messages-list";
 import { Chats, User } from "../chats-list";
+import { MessageService } from "../../services/messages.service";
+import { AxiosResponse } from "axios";
 
 export interface Message {
   to: string;
-  from: User;
+  from: User | {};
   content: string;
   type: string;
   createdAt: Date;
+  chatId?: string;
 }
 
 export const TextArea = (props: { activeChat: Chats }) => {
@@ -26,7 +29,8 @@ export const TextArea = (props: { activeChat: Chats }) => {
     if (clientSocket && text) {
       console.log("sending message");
       const newMsg: Message = {
-        to: activeChat._id,
+        chatId: activeChat._id,
+        to: activeChat.user._id,
         from: loggedInUser || {},
         content: text,
         type: "text",
@@ -37,9 +41,19 @@ export const TextArea = (props: { activeChat: Chats }) => {
     }
   };
 
+  const fetchMessages = () => {
+    MessageService.getMessages(activeChat._id)
+      .then((resp: AxiosResponse<Message[]>) => {
+        setMessages((prev) => [...resp.data, ...prev]);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
   useEffect(() => {
-    setMessages([]);
-  }, [activeChat]);
+    fetchMessages();
+  }, [activeChat._id]);
 
   return (
     <View style={{ flex: 1 }}>

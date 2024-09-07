@@ -17,17 +17,21 @@ import { ApplicationState } from "../../redux/reducer";
 import { UserServices } from "../../services/user.service";
 import { AppHeader } from "../app-header";
 import { Message } from "../text-area";
+import { ChatServices } from "../../services/chat.service";
 
 export interface Chats {
-  _id?: string;
-  user_id: string;
-  username: string;
+  _id: string;
+  users?: string[];
+  user: {
+    _id: string;
+    username: string;
+    email: string;
+    profileImg: string;
+    id: string;
+  };
   lastMessage: string;
   lastMessageDate: string;
   unreadMessages: number;
-  email?: string;
-  profileImg?: string;
-  id?: string;
 }
 
 export interface User {
@@ -36,6 +40,9 @@ export interface User {
   username: string;
   email: string;
   profileImg?: string;
+  chatInfo?: {
+    _id: string;
+  };
 }
 export const ChatsList = (props: {
   newMessage: Message | null;
@@ -48,7 +55,7 @@ export const ChatsList = (props: {
   const navigation = useNavigation();
   const [searchText, setSearchText] = useState<string>("");
   const [chats, setChats] = useState<Chats[]>(chatsFromProps || []);
-  const [searchUsers, setSearchUsers] = useState<Chats[]>([]);
+  const [searchUsers, setSearchUsers] = useState<Chats[] | User[]>([]);
 
   const debouncedSearchText = useDebounce(searchText, 500);
 
@@ -73,7 +80,13 @@ export const ChatsList = (props: {
           console.log(err);
         });
     } else {
-      setChats([]);
+      ChatServices.getChats()
+        .then((resp) => {
+          setChats(resp.data || []);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     }
   };
 
@@ -86,7 +99,7 @@ export const ChatsList = (props: {
       newChats?.forEach((item: Chats, index: number) => {
         if (
           senderIndexFromChats === -1 &&
-          messageInfo?.from?._id === item.user_id
+          messageInfo?.from?._id === item.user._id
         ) {
           senderIndexFromChats = index;
         }
@@ -94,13 +107,16 @@ export const ChatsList = (props: {
       if (senderIndexFromChats === -1) {
         newChats.splice(senderIndexFromChats, 1);
         const newChat = {
-          user_id: messageInfo?.from?._id,
-          username: messageInfo?.from?.username,
+          _id: messageInfo?.chatId,
+          user: {
+            _id: messageInfo?.from?._id,
+            username: messageInfo?.from?.username,
+            email: messageInfo?.from?.email || "",
+            profileImg: messageInfo?.from?.profileImg || "",
+          },
           lastMessage: messageInfo?.content,
           lastMessageDate: messageInfo?.createdAt,
           unreadMessages: 1,
-          email: messageInfo?.from?.email || "",
-          profileImg: messageInfo?.from?.profileImg || "",
         };
         newChats.unshift(newChat);
       } else {
@@ -123,6 +139,13 @@ export const ChatsList = (props: {
   console.log("chats", chats);
   console.log("searchUsers", searchUsers);
 
+  const searchResultsFromChats = searchUsers.filter(
+    (userItem) => (userItem as User).chatInfo?._id
+  );
+  const searchResultsFromNewUsers = searchUsers.filter(
+    (userItem) => !(userItem as User).chatInfo?._id
+  );
+
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.golbalHeader}>
@@ -135,9 +158,7 @@ export const ChatsList = (props: {
               <EvilIcons name="search" size={24} color="white" />
               <TextInput
                 value={searchText}
-                placeholder={
-                  type === "chats" ? "Search Chats..." : "Add New Chat..."
-                }
+                placeholder={"Search Chats"}
                 onChange={(e) => {
                   setSearchText(e.target.value);
                 }}
@@ -146,49 +167,176 @@ export const ChatsList = (props: {
             </View>
           </View>
 
-          <FlatList
-            data={searchUsers?.length ? searchUsers : chats}
-            disableScrollViewPanResponder={true}
-            renderItem={({ item }) => {
-              return (
-                <TouchableOpacity
-                  style={styles.listItem}
-                  onPress={() => {
-                    console.log(chats, item);
-                    navigation.navigate("chats", {
-                      activeChat: item,
-                      initialChats: chats,
-                    });
-                    if (searchText?.length) {
-                      setSearchText("");
-                      setSearchUsers([]);
-                    }
-                  }}
-                >
-                  {item.img?.length ? (
-                    <Text>Got it </Text>
-                  ) : (
-                    <FontAwesome5 name="user-circle" size={32} color="white" />
-                  )}
-                  <Text style={{ color: "white" }}>{item.username}</Text>
-                  <View style={styles.chatMeta}>
-                    <Text style={{ color: "white", fontSize: 10 }}>
-                      {formatDateString(item.lastMessageDate)}
-                    </Text>
-                    {item.unreadMessages !== 0 && (
-                      <View>
-                        <Text style={{ color: "white" }}>
-                          {item.unreadMessages}
-                        </Text>
-                      </View>
+          <View style={{ paddingHorizontal: 10 }}>
+            <FlatList
+              data={searchText?.length ? searchResultsFromChats : chats}
+              disableScrollViewPanResponder={true}
+              renderItem={({ item }) => {
+                return (
+                  <TouchableOpacity
+                    style={styles.listItem}
+                    onPress={() => {
+                      navigation.navigate("chats", {
+                        activeChat: item,
+                      });
+                      if (searchText?.length) {
+                        setSearchText("");
+                        setSearchUsers([]);
+                      }
+                    }}
+                  >
+                    {item.img?.length ? (
+                      <Text>Got it </Text>
+                    ) : (
+                      <FontAwesome5
+                        name="user-circle"
+                        size={32}
+                        color="white"
+                      />
                     )}
+                    <Text style={{ color: "white" }}>
+                      {(item as Chats).user
+                        ? (item as Chats).user.username
+                        : (item as User).username}
+                    </Text>
+                    {
+                      <View style={styles.chatMeta}>
+                        <Text style={{ color: "white", fontSize: 10 }}>
+                          {formatDateString((item as Chats).lastMessageDate)}
+                        </Text>
+                        {(item as Chats).unreadMessages !== 0 && (
+                          <View>
+                            <Text style={{ color: "white" }}>
+                              {(item as Chats).unreadMessages}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    }
+                  </TouchableOpacity>
+                );
+              }}
+              showsVerticalScrollIndicator={false}
+              keyExtractor={(item) => item._id}
+              ListEmptyComponent={
+                searchText?.length ? (
+                  <View
+                    style={{
+                      display: "flex",
+                      flex: 1,
+                      width: "100%",
+                      paddingVertical: 32,
+                      alignItems: "center",
+                      flexDirection: "row",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text>No Such Chats Available</Text>
                   </View>
-                </TouchableOpacity>
-              );
-            }}
-            showsVerticalScrollIndicator={false}
-            keyExtractor={(item) => item.username}
-          />
+                ) : null
+              }
+              ListHeaderComponent={
+                searchText?.length ? (
+                  <View>
+                    <Text style={{ color: "white" }}>Chats</Text>
+                  </View>
+                ) : null
+              }
+              ListHeaderComponentStyle={{
+                display: "flex",
+                flex: 1,
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "flex-start",
+                marginHorizontal: 10,
+                marginVertical: 20,
+              }}
+            />
+            {searchText?.length ? (
+              <FlatList
+                data={searchResultsFromNewUsers}
+                disableScrollViewPanResponder={true}
+                renderItem={({ item }) => {
+                  return (
+                    <TouchableOpacity
+                      style={styles.listItem}
+                      onPress={() => {
+                        ChatServices.createChat({
+                          users: [
+                            loggedInUser?._id || "",
+                            (item as User)._id || "",
+                          ],
+                        })
+                          .then((resp) => {
+                            navigation.navigate("chats", {
+                              activeChat: {
+                                ...resp.data,
+                                user: item,
+                              },
+                            });
+                            if (searchText?.length) {
+                              setSearchText("");
+                              setSearchUsers([]);
+                            }
+                          })
+                          .catch((err) => {
+                            console.log(err);
+                          });
+                      }}
+                    >
+                      {item.img?.length ? (
+                        <Text>Got it </Text>
+                      ) : (
+                        <FontAwesome5
+                          name="user-circle"
+                          size={32}
+                          color="white"
+                        />
+                      )}
+                      <Text style={{ color: "white" }}>
+                        {(item as User).username}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+                showsVerticalScrollIndicator={false}
+                keyExtractor={(item) => item._id}
+                ListEmptyComponent={
+                  searchText?.length ? (
+                    <View
+                      style={{
+                        display: "flex",
+                        flex: 1,
+                        width: "100%",
+                        paddingVertical: 32,
+                        alignItems: "center",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text>No Such Users Available</Text>
+                    </View>
+                  ) : null
+                }
+                ListHeaderComponent={
+                  searchText?.length ? (
+                    <View>
+                      <Text style={{ color: "white" }}>Other Users</Text>
+                    </View>
+                  ) : null
+                }
+                ListHeaderComponentStyle={{
+                  display: "flex",
+                  flex: 1,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "flex-start",
+                  marginHorizontal: 10,
+                  marginVertical: 20,
+                }}
+              />
+            ) : null}
+          </View>
         </View>
       </View>
     </View>
@@ -258,5 +406,8 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  displayHide: {
+    display: "none",
   },
 });

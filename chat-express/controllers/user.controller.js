@@ -1,11 +1,43 @@
 const { User } = require("../models/user.model");
 const mongoose = require("mongoose");
+const async = require("async");
 
 exports.searchUsers = (req, res) => {
-  const searchText = req.query;
+  let { searchText } = req.query;
+  searchText = `^${searchText}`;
   const searchRegExp = new RegExp(searchText, "i");
-  User.find({ username: searchRegExp })
-    .lean()
+  User.aggregate([
+    {
+      $match: {
+        username: { $regex: searchText, $options: "i" },
+      },
+    },
+    {
+      $lookup: {
+        from: "chats",
+        let: { user_id: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              users: { $all: ["$$user_id", req.user._id] },
+            },
+          },
+          {
+            $project: { _id: 1 },
+          },
+        ],
+        as: "chatsInfo",
+      },
+    },
+    {
+      $addFields: {
+        chatInfo: { $arrayElemAt: ["$chatsInfo", 0] },
+      },
+    },
+    {
+      $project: { chatsInfo: 0 },
+    },
+  ])
     .then((users) => {
       return res.status(200).send(users);
     })

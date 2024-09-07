@@ -10,6 +10,7 @@ const AuthController = require("./controllers/auth.controller");
 const ChatSocket = require("./socket/index");
 const UserRouter = require("./routes/user.routes");
 const ChatRouter = require("./routes/chat.routes");
+const MessageRouter = require("./routes/messages.routes");
 
 app = express();
 var port = process.env.PORT;
@@ -26,6 +27,7 @@ app.use("/auth/", authRouter);
 app.use("/", AuthController.authCheck);
 app.use("/users/", UserRouter);
 app.use("/chats/", ChatRouter);
+app.use("/messages/", MessageRouter);
 
 app.get("/", (req, res) => {
   res.status(200).send("Chat backend is up");

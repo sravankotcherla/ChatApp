@@ -3,4 +3,7 @@ const MessageController = require("../controllers/message.controller");
 
 const MessageRouter = express();
 
-app.route("/").post(MessageController.postMessage);
+MessageRouter.route("/").post(MessageController.postMessage);
+MessageRouter.route("/getChatMsgs").get(MessageController.getChatMessages);
+
+module.exports = MessageRouter;

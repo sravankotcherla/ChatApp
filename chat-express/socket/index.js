@@ -39,7 +39,7 @@ exports.init = (app, cb) => {
   io.on("connection", (socket) => {
     console.log("Connection established successfully", socket);
 
-    socket.on("message", async (messageInfo, chatId) => {
+    socket.on("message", async (messageInfo) => {
       const activeSockets = await io.fetchSockets();
       const receiverSocket = activeSockets.find(
         (socketItem) => socketItem?.user?._id === messageInfo?.to
@@ -47,35 +47,14 @@ exports.init = (app, cb) => {
       if (receiverSocket) {
         receiverSocket.emit("message", messageInfo);
       }
-      if (!chatId?.length) {
-        const newChat = await Chat.create({
-          users: [messageInfo.from._id, messageInfo.to],
-          lastMessage: messageInfo.content,
-          lastMessageDate: messageInfo.createdAt,
-          unreadMessages: 1,
-        });
-        chatId = newChat.toJSON()._id.toString();
-        const senderSocket = activeSockets.find(
-          (socktItem) => socketItem?.user?._id === messageInfo?.from?._id
-        );
-        if (senderSocket) {
-          senderSocket("newChat", newChat.toJSON());
+
+      MessageController.createMessage(messageInfo, function (err, results) {
+        if (err) {
+          console.log(err);
+        } else {
+          console.log("Message sent successfully", results);
         }
-      }
-      Async.parallel(
-        {
-          messaeg: function (callback) {
-            return MessageController.createMessage(messageInfo, callback);
-          },
-        },
-        function (err, results) {
-          if (err) {
-            console.log(err);
-          } else {
-            console.log("Message sent successfully", results);
-          }
-        }
-      );
+      });
     });
 
     socket.on("disconnect", (socket) => {

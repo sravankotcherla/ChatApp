@@ -6,6 +6,7 @@ import {
   View,
   Text,
   Image,
+  Dimensions,
 } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useNavigation } from "@react-navigation/native";
@@ -15,12 +16,15 @@ import { setAsyncStorageData } from "../../helpers/common-helpers";
 import { useDebounce } from "../../custom-hooks/debounce-hook";
 import { useDispatch } from "react-redux";
 import ReduxActions from "../../redux/actions";
+import { breakPoints } from "../../constants/screen-sizes";
 
 export const SignIn = (props: { onLoginCallback: () => void }) => {
   const { onLoginCallback } = props;
 
   const navigation = useNavigation();
   const dispatch = useDispatch();
+
+  const { width } = Dimensions.get("window");
 
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -33,7 +37,7 @@ export const SignIn = (props: { onLoginCallback: () => void }) => {
         backgroundColor: "#c3d2ef",
       }}
     >
-      <View style={Styles.modal}>
+      <View style={width > breakPoints.md ? Styles.modal : Styles.signInDiv}>
         <View style={Styles.header}>
           <Image
             source={require("../../assets/icons/chatAppIcon.png")}
@@ -99,7 +103,7 @@ export const SignIn = (props: { onLoginCallback: () => void }) => {
               });
           }}
         >
-          Login
+          <Text>Login</Text>
         </TouchableOpacity>
         {/* <View>
           <Text>Sign in with</Text>
@@ -119,6 +123,18 @@ const Styles = StyleSheet.create({
     paddingBottom: 50,
     width: 450,
   },
+  signInDiv: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    backgroundColor: "rgb(64, 71, 87)",
+    color: "white",
+    paddingHorizontal: 50,
+    paddingTop: 50,
+    paddingBottom: 50,
+    width: "100%",
+    height: "100%",
+  },
   header: {
     display: "flex",
     flexDirection: "row",
@@ -134,7 +150,7 @@ const Styles = StyleSheet.create({
   },
   titleText: {
     fontSize: 35,
-    fontWeight: 500,
+    // fontWeight: 500,
     color: "white",
     marginLeft: 16,
   },
@@ -156,7 +172,6 @@ const Styles = StyleSheet.create({
     fontSize: 16,
   },
   switchPage: {
-    flex: 1,
     flexDirection: "row",
     color: "white",
   },
@@ -167,12 +182,12 @@ const Styles = StyleSheet.create({
   },
   loginBtn: {
     backgroundColor: "rgb(114, 109, 254)",
-    flex: 1,
     flexDirection: "row",
     justifyContent: "center",
     padding: 12,
     marginTop: 30,
     marginBottom: 30,
+    height: 40,
     borderRadius: 8,
   },
 });

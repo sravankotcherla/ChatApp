@@ -20,3 +20,20 @@ exports.createMessage = (messageBody, cb) => {
       return cb(err);
     });
 };
+
+exports.getChatMessages = (req, res) => {
+  const { chatId, skipNumber } = req.query;
+  Message.find({
+    chatId: chatId,
+  })
+    .sort({ createAt: -1 })
+    .skip(skipNumber)
+    .limit(20)
+    .lean()
+    .then((msgs) => {
+      return res.jsonp(msgs);
+    })
+    .catch((err) => {
+      return res.status(500).send(err);
+    });
+};

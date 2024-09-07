@@ -16,11 +16,7 @@ const { width } = Dimensions.get("window");
 
 export const ChatBox = (props: { route: any; newMessage: Message | null }) => {
   const { newMessage, route } = props;
-  const {
-    activeChat,
-    initialChats,
-    searchText,
-  }: { activeChat: Chats; initialChats: Chats[]; searchText: string } =
+  const { activeChat, searchText }: { activeChat: Chats; searchText: string } =
     route.params;
 
   const navigation = useNavigation();
@@ -34,11 +30,7 @@ export const ChatBox = (props: { route: any; newMessage: Message | null }) => {
     >
       {width > breakPoints.md && (
         <View style={{ flex: 1 }}>
-          <ChatsList
-            searchString={searchText}
-            chatsFromProps={initialChats}
-            newMessage={newMessage}
-          />
+          <ChatsList searchString={searchText} newMessage={newMessage} />
         </View>
       )}
       <View style={{ flex: 3, backgroundColor: "rgb(64, 71, 87)" }}>
@@ -60,7 +52,7 @@ export const ChatBox = (props: { route: any; newMessage: Message | null }) => {
           >
             <FontAwesome5 name="user-circle" size={32} color="white" />
             <Text style={{ fontSize: 18, color: "white" }}>
-              {activeChat.username || "User Name"}
+              {activeChat.user.username || "User Name"}
             </Text>
           </View>
         </View>

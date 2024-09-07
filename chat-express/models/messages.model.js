@@ -10,6 +10,10 @@ const MessageSchema = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       required: true,
     },
+    chatId: {
+      type: String,
+      required: true,
+    },
     type: {
       type: String,
     },
