@@ -6,6 +6,7 @@ export const AuthService = {
     password: string;
     email: string;
   }) => {
+    console.log(params);
     return axiosNode.post("/auth/signUp", params);
   },
   signIn: async (params: { username: string; password: string }) => {

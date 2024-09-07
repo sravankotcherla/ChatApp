@@ -28,7 +28,7 @@ export const SocketProvider = (props: { children: any }) => {
     console.log("sokcet connected", isSockedConnected);
     if (jwtToken && !isSockedConnected) {
       console.log("connecting.....", clientSocket);
-      const socketInstance = io("http://localhost:8082", {
+      const socketInstance = io("http://192.168.1.3:8082", {
         auth: {
           jwt: jwtToken,
         },

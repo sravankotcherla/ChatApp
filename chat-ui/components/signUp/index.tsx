@@ -6,6 +6,7 @@ import {
   View,
   Text,
   Image,
+  Dimensions,
 } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useNavigation } from "@react-navigation/native";
@@ -13,9 +14,11 @@ import { EvilIcons } from "@expo/vector-icons";
 import { AuthService } from "../../services/auth.service";
 
 import Fontisto from "@expo/vector-icons/Fontisto";
+import { breakPoints } from "../../constants/screen-sizes";
 
 export const SignUp = () => {
   const navigation = useNavigation();
+  const {width}= Dimensions.get("window")
 
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -30,7 +33,7 @@ export const SignUp = () => {
         backgroundColor: "#c3d2ef",
       }}
     >
-      <View style={Styles.modal}>
+      <View style={width > breakPoints.md ?  Styles.modal : Styles.signUpDiv}>
         <View style={Styles.header}>
           <Image
             source={require("../../assets/icons/chatAppIcon.png")}
@@ -48,9 +51,7 @@ export const SignUp = () => {
             />
             <TextInput
               value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-              }}
+              onChangeText={setUsername}
               placeholder="Username"
               style={Styles.textEditor}
               textContentType="emailAddress"
@@ -65,9 +66,7 @@ export const SignUp = () => {
             />
             <TextInput
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-              }}
+              onChangeText={setEmail}
               placeholder="Email"
               style={Styles.textEditor}
               textContentType="emailAddress"
@@ -77,9 +76,7 @@ export const SignUp = () => {
             <EvilIcons name="lock" size={24} color="white" />
             <TextInput
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-              }}
+              onChangeText={setPassword}
               placeholder="Password"
               style={Styles.textEditor}
               textContentType="password"
@@ -108,7 +105,7 @@ export const SignUp = () => {
               });
           }}
         >
-          Sign Up
+          <Text>Sign Up</Text>
         </TouchableOpacity>
         {/* <View>
           <Text>Sign in with</Text>
@@ -127,6 +124,18 @@ const Styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 50,
     width: 450,
+  },
+  signUpDiv: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    backgroundColor: "rgb(64, 71, 87)",
+    color: "white",
+    paddingHorizontal: 50,
+    paddingTop: 50,
+    paddingBottom: 50,
+    width: "100%",
+    height: "100%",
   },
   header: {
     display: "flex",
@@ -165,7 +174,6 @@ const Styles = StyleSheet.create({
     fontSize: 16,
   },
   switchPage: {
-    flex: 1,
     flexDirection: "row",
     color: "white",
   },
@@ -176,7 +184,6 @@ const Styles = StyleSheet.create({
   },
   loginBtn: {
     backgroundColor: "rgb(114, 109, 254)",
-    flex: 1,
     flexDirection: "row",
     justifyContent: "center",
     padding: 12,

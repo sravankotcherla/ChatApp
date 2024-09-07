@@ -159,9 +159,7 @@ export const ChatsList = (props: {
               <TextInput
                 value={searchText}
                 placeholder={"Search Chats"}
-                onChange={(e) => {
-                  setSearchText(e.target.value);
-                }}
+                onChangeText={setSearchText}
                 style={styles.textInput}
               />
             </View>

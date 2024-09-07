@@ -64,9 +64,7 @@ export const TextArea = (props: { activeChat: Chats }) => {
         <TextInput
           value={text}
           placeholder="Send a message..."
-          onChange={(e) => {
-            setText(e.target.value);
-          }}
+          onChangeText={setText}
           autoFocus={true}
           style={Styles.textInp}
         />

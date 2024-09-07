@@ -55,9 +55,7 @@ export const SignIn = (props: { onLoginCallback: () => void }) => {
             />
             <TextInput
               value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-              }}
+              onChangeText={setUsername}
               placeholder="Username/Email"
               style={Styles.textEditor}
               textContentType="emailAddress"
@@ -67,9 +65,7 @@ export const SignIn = (props: { onLoginCallback: () => void }) => {
             <EvilIcons name="lock" size={24} color="white" />
             <TextInput
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-              }}
+              onChangeText={setPassword}
               placeholder="Password"
               style={Styles.textEditor}
               textContentType="password"

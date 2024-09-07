@@ -7,6 +7,9 @@ const { default: mongoose } = require("mongoose");
 exports.signUp = async (req, res) => {
   const { username, email, password } = req.body;
 
+  if(!username?.length || !password?.length || !password?.length){
+    return res.status(400).send("Missing Credential Info");
+  }
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   User.create({ id: username, username, email, password: hashedPassword })
