@@ -1,52 +1,71 @@
-import React, { useContext, useEffect, useState } from "react";
-import { ChatBox } from "../components/chat-box";
-import Home from "../components/home";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { MenuProvider } from "react-native-popup-menu";
+import { useDispatch, useSelector } from "react-redux";
+import { ChatBox } from "../components/chat-box";
+import { Chats } from "../components/chats-list";
+import Home from "../components/home";
 import { SocketContext } from "../providers/socket-provider";
-import { Message } from "../components/text-area";
+import ReduxActions from "../redux/actions";
+import { ApplicationState } from "../redux/reducer";
+import { AppState } from "react-native";
 
 export const Stack = createNativeStackNavigator();
 
 export const AppStack = () => {
   const clientSocket = useContext(SocketContext);
+  const dispatch = useDispatch();
 
-  const [newMessage, setNewMessage] = useState<Message | null>(null);
+  const loggedInUser = useSelector((state: ApplicationState) => state.user);
+
+  // const [appState, setAppState] = useState(AppState.currentState);
 
   const receiveMessages = () => {
     clientSocket?.on("message", (messageInfo) => {
-      console.log("received message", messageInfo);
-      setNewMessage(messageInfo);
+      if (messageInfo.to === loggedInUser?._id) {
+        dispatch(ReduxActions.setNewMessage(messageInfo));
+        dispatch(ReduxActions.updateChatsWithNewMessage(messageInfo));
+      }
     });
   };
-
   useEffect(() => {
     receiveMessages();
   }, []);
+
+  // useEffect(() => {
+  //   const subscription = AppState.addEventListener(
+  //     "change",
+  //     async (nextAppState) => {
+  //       if (appState.match(/active/) && nextAppState === "background") {
+  //         dispatch(ReduxActions.setNewActiveChat(null));
+  //       }
+  //     }
+  //   );
+  // }, []);
+
   return (
     <MenuProvider>
       <NavigationContainer independent={true}>
         <Stack.Navigator initialRouteName="home">
-          <Stack.Screen name="home" options={{ headerShown: false }}>
-            {() => <Home newMessage={newMessage} />}
-          </Stack.Screen>
+          <Stack.Screen
+            name="home"
+            options={{ headerShown: false }}
+            component={Home}
+          ></Stack.Screen>
           <Stack.Screen
             name="chats"
-            component={({ route }) => (
-              <ChatBox newMessage={newMessage} route={route}></ChatBox>
-            )}
+            component={ChatBox}
             options={() => ({
               headerShown: false,
             })}
           ></Stack.Screen>
-          {/* <Stack.Screen
-            name="addChat"
-            component={AddChats}
-            options={() => ({
-              headerShown: false,
-            })}
-          ></Stack.Screen> */}
         </Stack.Navigator>
       </NavigationContainer>
     </MenuProvider>

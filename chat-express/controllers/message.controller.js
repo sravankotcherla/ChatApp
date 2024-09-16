@@ -26,7 +26,7 @@ exports.getChatMessages = (req, res) => {
   Message.find({
     chatId: chatId,
   })
-    .sort({ createAt: -1 })
+    .sort({ createdAt: -1 })
     .skip(skipNumber)
     .limit(20)
     .lean()

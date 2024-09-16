@@ -1,7 +1,7 @@
 import axios, { InternalAxiosRequestConfig } from "axios";
 import { getAsyncStorageData } from "../helpers/common-helpers";
 
-export const expressUrl = "http://192.168.1.3:8082/";
+export const expressUrl = "http://172.16.122.75:8082/";
 
 export const axiosNode = axios.create({
   baseURL: expressUrl,

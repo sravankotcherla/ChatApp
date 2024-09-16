@@ -2,12 +2,13 @@ import React, { useContext, useEffect, useState } from "react";
 import { StyleSheet, TextInput, Pressable, View } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 import { SocketContext } from "../../providers/socket-provider";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { ApplicationState } from "../../redux/reducer";
 import { MessagesList } from "../messages-list";
 import { Chats, User } from "../chats-list";
 import { MessageService } from "../../services/messages.service";
 import { AxiosResponse } from "axios";
+import ReduxActions from "../../redux/actions";
 
 export interface Message {
   to: string;
@@ -16,6 +17,8 @@ export interface Message {
   type: string;
   createdAt: Date;
   chatId?: string;
+  displayType?: "message" | "unread" | "date";
+  count?: number;
 }
 
 export const TextArea = (props: { activeChat: Chats }) => {
@@ -24,10 +27,37 @@ export const TextArea = (props: { activeChat: Chats }) => {
   const clientSocket = useContext(SocketContext);
   const [text, setText] = useState<string | null>("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [scrollIndex, setScrollIndex] = useState<number>(-1);
+
+  const newMessage = useSelector((state: ApplicationState) => state.newMessage);
+  const dispatch = useDispatch();
+
+  const insertUnreadAndDateSeperators = (msgs: Message[]) => {
+    let reqInd = -1;
+    const lastOpenedAt = new Date(
+      activeChat.lastVisitedAt?.[loggedInUser?._id || ""]
+    ).getTime();
+    msgs?.forEach((msg, index) => {
+      if (
+        msg.to === loggedInUser?._id &&
+        lastOpenedAt < new Date(msg.createdAt).getTime()
+      ) {
+        reqInd = index;
+      }
+    });
+    if (reqInd !== -1 && activeChat.unreadMessages !== 0) {
+      setScrollIndex(reqInd + 1);
+      msgs.splice(reqInd + 1, 0, {
+        _id: "unread",
+        displayType: "unread",
+        count: activeChat.unreadMessages,
+      });
+    }
+    return msgs;
+  };
 
   const sendMessage = () => {
     if (clientSocket && text) {
-      console.log("sending message");
       const newMsg: Message = {
         chatId: activeChat._id,
         to: activeChat.user._id,
@@ -36,15 +66,16 @@ export const TextArea = (props: { activeChat: Chats }) => {
         type: "text",
         createdAt: new Date(),
       };
-      setMessages((prev) => [newMsg, ...prev]);
+      setMessages((prev) => insertUnreadAndDateSeperators([newMsg, ...prev]));
       clientSocket.emit("message", newMsg);
+      setText("");
     }
   };
 
   const fetchMessages = () => {
     MessageService.getMessages(activeChat._id)
       .then((resp: AxiosResponse<Message[]>) => {
-        setMessages((prev) => [...resp.data, ...prev]);
+        setMessages(insertUnreadAndDateSeperators(resp.data));
       })
       .catch((err) => {
         console.log(err);
@@ -55,10 +86,26 @@ export const TextArea = (props: { activeChat: Chats }) => {
     fetchMessages();
   }, [activeChat._id]);
 
+  // useEffect(() => {
+  //   if (scrollIndex !== -1) {
+  //     dispatch(ReduxActions.clearUnreadChatPill(activeChat._id));
+  //   }
+  // }, [scrollIndex]);
+
+  useEffect(() => {
+    if (newMessage && newMessage?.from?._id === activeChat.user._id) {
+      setMessages((prev) => [newMessage, ...prev]);
+    }
+  }, [JSON.stringify(newMessage)]);
+
   return (
     <View style={{ flex: 1 }}>
       <View style={Styles.messageBox}>
-        <MessagesList messages={messages} />
+        <MessagesList
+          messages={messages}
+          activeChat={activeChat}
+          scrollToIndex={scrollIndex}
+        />
       </View>
       <View style={Styles.textBox}>
         <TextInput

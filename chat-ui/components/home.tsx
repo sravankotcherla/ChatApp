@@ -20,12 +20,11 @@ const styles = StyleSheet.create({
   },
 });
 
-const Home = (props: { newMessage: Message | null }) => {
-  const { newMessage } = props;
+const Home = () => {
   return (
     <SafeAreaView style={styles.homeContainer}>
       <View style={{ flex: 1 }}>
-        <ChatsList newMessage={newMessage} />
+        <ChatsList />
       </View>
       {width > breakPoints.md && <View style={styles.chatBox}></View>}
     </SafeAreaView>

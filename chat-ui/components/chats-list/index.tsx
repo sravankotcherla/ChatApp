@@ -11,13 +11,13 @@ import {
 
 import { FontAwesome5 } from "@expo/vector-icons";
 import EvilIcons from "@expo/vector-icons/EvilIcons";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useDebounce } from "../../custom-hooks/debounce-hook";
+import ReduxActions from "../../redux/actions";
 import { ApplicationState } from "../../redux/reducer";
+import { ChatServices } from "../../services/chat.service";
 import { UserServices } from "../../services/user.service";
 import { AppHeader } from "../app-header";
-import { Message } from "../text-area";
-import { ChatServices } from "../../services/chat.service";
 
 export interface Chats {
   _id: string;
@@ -28,6 +28,9 @@ export interface Chats {
     email: string;
     profileImg: string;
     id: string;
+  };
+  lastVisitedAt: {
+    [key: string]: Date;
   };
   lastMessage: string;
   lastMessageDate: string;
@@ -44,20 +47,18 @@ export interface User {
     _id: string;
   };
 }
-export const ChatsList = (props: {
-  newMessage: Message | null;
-  chatsFromProps?: any;
-}) => {
-  const { chatsFromProps, newMessage } = props;
-
+export const ChatsList = () => {
   const loggedInUser = useSelector((state: ApplicationState) => state.user);
 
   const navigation = useNavigation();
   const [searchText, setSearchText] = useState<string>("");
-  const [chats, setChats] = useState<Chats[]>(chatsFromProps || []);
+  const [chats, setChats] = useState<Chats[]>([]);
   const [searchUsers, setSearchUsers] = useState<Chats[] | User[]>([]);
 
+  const chatsFromRedux = useSelector((state: ApplicationState) => state.chats);
+
   const debouncedSearchText = useDebounce(searchText, 500);
+  const dispatch = useDispatch();
 
   function formatDateString(dateString) {
     const date = new Date(dateString);
@@ -70,74 +71,42 @@ export const ChatsList = (props: {
     return `${day}/${month}/${year}`;
   }
 
-  const getChatsList = () => {
-    if ((debouncedSearchText as string)?.length != 0) {
-      UserServices.searchUsers({ searchText: debouncedSearchText as string })
-        .then((resp) => {
-          setSearchUsers(resp.data);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    } else {
-      ChatServices.getChats()
-        .then((resp) => {
-          setChats(resp.data || []);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
+  const getChatsList = async () => {
+    ChatServices.getChats()
+      .then(async (resp) => {
+        dispatch(ReduxActions.setChats(resp.data));
+        setChats(resp.data || []);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
-  function updateChatsWithNewMessage(messageInfo: Message) {
-    if (messageInfo.to === loggedInUser?._id) {
-      console.log(setChats);
-      console.log("prevChats", chats);
-      let senderIndexFromChats = -1;
-      const newChats = chats.map((chatItem) => chatItem);
-      newChats?.forEach((item: Chats, index: number) => {
-        if (
-          senderIndexFromChats === -1 &&
-          messageInfo?.from?._id === item.user._id
-        ) {
-          senderIndexFromChats = index;
-        }
+  const getSearchResults = () => {
+    UserServices.searchUsers({ searchText: debouncedSearchText as string })
+      .then((resp) => {
+        setSearchUsers(resp.data);
+      })
+      .catch((err) => {
+        console.log(err);
       });
-      if (senderIndexFromChats === -1) {
-        newChats.splice(senderIndexFromChats, 1);
-        const newChat = {
-          _id: messageInfo?.chatId,
-          user: {
-            _id: messageInfo?.from?._id,
-            username: messageInfo?.from?.username,
-            email: messageInfo?.from?.email || "",
-            profileImg: messageInfo?.from?.profileImg || "",
-          },
-          lastMessage: messageInfo?.content,
-          lastMessageDate: messageInfo?.createdAt,
-          unreadMessages: 1,
-        };
-        newChats.unshift(newChat);
-      } else {
-        newChats[senderIndexFromChats].lastMessage = messageInfo?.content;
-        newChats[senderIndexFromChats].unreadMessages++;
-      }
-      console.log("newChats", newChats);
-      setChats(newChats);
+  };
+
+  useEffect(() => {
+    setChats(chatsFromRedux);
+  }, [chatsFromRedux]);
+
+  useEffect(() => {
+    if (!chatsFromRedux?.length) {
+      getChatsList();
     }
-  }
+  }, []);
 
   useEffect(() => {
-    if (newMessage) updateChatsWithNewMessage(newMessage);
-  }, [newMessage]);
-
-  useEffect(() => {
-    getChatsList();
+    if ((debouncedSearchText as string)?.length != 0) {
+      getSearchResults();
+    }
   }, [debouncedSearchText]);
-
-  console.log("chats", chats);
-  console.log("searchUsers", searchUsers);
 
   const searchResultsFromChats = searchUsers.filter(
     (userItem) => (userItem as User).chatInfo?._id
@@ -174,6 +143,7 @@ export const ChatsList = (props: {
                   <TouchableOpacity
                     style={styles.listItem}
                     onPress={() => {
+                      dispatch(ReduxActions.setNewActiveChat(item._id));
                       navigation.navigate("chats", {
                         activeChat: item,
                       });
@@ -192,14 +162,29 @@ export const ChatsList = (props: {
                         color="white"
                       />
                     )}
-                    <Text style={{ color: "white" }}>
-                      {(item as Chats).user
-                        ? (item as Chats).user.username
-                        : (item as User).username}
-                    </Text>
+                    <View>
+                      <Text
+                        style={{
+                          color: "white",
+                          fontSize: 18,
+                          marginBottom: 4,
+                        }}
+                      >
+                        {(item as Chats).user
+                          ? (item as Chats).user.username
+                          : (item as User).username}
+                      </Text>
+                      {(item as Chats).lastMessage?.length ? (
+                        <Text style={{ color: "lightGrey" }}>
+                          {(item as Chats).lastMessage?.length > 13
+                            ? (item as Chats).lastMessage.slice(0, 13) + "..."
+                            : (item as Chats).lastMessage}
+                        </Text>
+                      ) : null}
+                    </View>
                     {
                       <View style={styles.chatMeta}>
-                        <Text style={{ color: "white", fontSize: 10 }}>
+                        <Text style={{ color: "white", fontSize: 12 }}>
                           {formatDateString((item as Chats).lastMessageDate)}
                         </Text>
                         {(item as Chats).unreadMessages !== 0 && (
@@ -264,8 +249,12 @@ export const ChatsList = (props: {
                             loggedInUser?._id || "",
                             (item as User)._id || "",
                           ],
+                          visitedAt: new Date(),
                         })
                           .then((resp) => {
+                            dispatch(
+                              ReduxActions.setNewActiveChat(resp.data._id)
+                            );
                             navigation.navigate("chats", {
                               activeChat: {
                                 ...resp.data,
@@ -354,30 +343,30 @@ const styles = StyleSheet.create({
     borderRightWidth: 2,
   },
   listHeader: {
-    flexBasis: 40,
     display: "flex",
     flexDirection: "row",
     alignContent: "center",
     justifyContent: "space-between",
     marginHorizontal: 10,
-    marginBottom: 10,
+    marginBottom: 12,
     marginTop: 16,
     gap: 4,
   },
   listItem: {
     backgroundColor: "rgba(83, 90, 109, 0.33)",
     borderRadius: 12,
-
+    marginBottom: 12,
     display: "flex",
     flexDirection: "row",
-    height: 60,
+    height: 80,
     paddingHorizontal: 16,
     paddingVertical: 8,
     alignItems: "center",
     justifyContent: "flex-start",
     gap: 16,
-    fontSize: 20,
+    fontSize: 28,
     color: "white",
+    overflow: "hidden",
   },
 
   textInputWrapper: {
@@ -385,7 +374,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
-    height: 40,
+    height: 60,
     paddingHorizontal: 10,
     backgroundColor: "rgba(83, 90, 109, 0.33)",
     borderColor: "rgba(83, 90, 109, 0.33)",
@@ -395,14 +384,15 @@ const styles = StyleSheet.create({
   textInput: {
     outlineStyle: "none",
     flex: 1,
-    height: 40,
+    height: 80,
     color: "white",
-    marginHorizontal: 10,
+    marginHorizontal: 12,
   },
   chatMeta: {
     marginLeft: "auto",
     flexDirection: "column",
     justifyContent: "space-between",
+    gap: 8,
     alignItems: "center",
   },
   displayHide: {

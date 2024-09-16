@@ -6,6 +6,10 @@ const ChatSchema = new mongoose.Schema({
     type: [mongoose.Types.ObjectId],
     required: true,
   },
+  lastVisitedAt: {
+    type: Map,
+    of: Date,
+  },
   lastMessage: {
     type: String,
     default: "",

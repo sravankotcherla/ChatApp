@@ -9,15 +9,13 @@ import {
   View,
 } from "react-native";
 import { breakPoints } from "../../constants/screen-sizes";
-import { Chats, ChatsList } from "../chats-list";
-import { Message, TextArea } from "../text-area";
+import { ChatsList } from "../chats-list";
+import { TextArea } from "../text-area";
 
 const { width } = Dimensions.get("window");
 
-export const ChatBox = (props: { route: any; newMessage: Message | null }) => {
-  const { newMessage, route } = props;
-  const { activeChat, searchText }: { activeChat: Chats; searchText: string } =
-    route.params;
+export const ChatBox = ({ route }) => {
+  const { activeChat } = route.params;
 
   const navigation = useNavigation();
 
@@ -30,7 +28,7 @@ export const ChatBox = (props: { route: any; newMessage: Message | null }) => {
     >
       {width > breakPoints.md && (
         <View style={{ flex: 1 }}>
-          <ChatsList searchString={searchText} newMessage={newMessage} />
+          <ChatsList />
         </View>
       )}
       <View style={{ flex: 3, backgroundColor: "rgb(64, 71, 87)" }}>
