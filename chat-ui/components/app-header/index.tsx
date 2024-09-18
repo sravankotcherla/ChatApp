@@ -9,8 +9,10 @@ import {
 } from "react-native-popup-menu";
 import { clearAsyncStorage } from "../../helpers/common-helpers";
 import { SocketContext } from "../../providers/socket-provider";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import ReduxActions from "../../redux/actions";
+import { useNavigation } from "@react-navigation/native";
+import { ApplicationState } from "../../redux/reducer";
 
 const styles = StyleSheet.create({
   headerContainer: {
@@ -32,12 +34,17 @@ const styles = StyleSheet.create({
 export const AppHeader = () => {
   const dispatch = useDispatch();
   const clientSocket = useContext(SocketContext);
+  const navigation = useNavigation();
+
+  const userInfo = useSelector((state: ApplicationState) => state.user);
 
   const profileMenuOptions = [
     {
       id: "profile",
       name: "Profile",
-      onClick: () => {},
+      onClick: () => {
+        navigation.navigate("profile");
+      },
     },
     {
       id: "logout",
@@ -75,7 +82,14 @@ export const AppHeader = () => {
       </Pressable> */}
       <Menu>
         <MenuTrigger>
-          <FontAwesome5 name="user-circle" size={32} color="white" />
+          {userInfo?.profileImg?.length ? (
+            <Image
+              source={{ uri: userInfo.profileImg }}
+              style={{ width: 32, height: 32, borderRadius: 16 }}
+            />
+          ) : (
+            <FontAwesome5 name="user-circle" size={32} color="white" />
+          )}
         </MenuTrigger>
         <MenuOptions
           customStyles={{

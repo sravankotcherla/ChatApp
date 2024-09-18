@@ -65,3 +65,14 @@ exports.getSessionInfo = (req, res) => {
         .send({ error: err, message: "Error while fetching session info" });
     });
 };
+
+exports.updateUser = (req, res) => {
+  const { newUserBody } = req.body;
+  User.findByIdAndUpdate(req.user._id, newUserBody)
+    .then((resp) => {
+      return res.status(200).jsonp(resp);
+    })
+    .catch((err) => {
+      return res.status(500).send(err);
+    });
+};

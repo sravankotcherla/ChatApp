@@ -16,6 +16,7 @@ import { SocketContext } from "../providers/socket-provider";
 import ReduxActions from "../redux/actions";
 import { ApplicationState } from "../redux/reducer";
 import { AppState } from "react-native";
+import { Profile } from "../components/profile";
 
 export const Stack = createNativeStackNavigator();
 
@@ -65,6 +66,11 @@ export const AppStack = () => {
             options={() => ({
               headerShown: false,
             })}
+          ></Stack.Screen>
+          <Stack.Screen
+            name="profile"
+            options={{ headerShown: false }}
+            component={Profile}
           ></Stack.Screen>
         </Stack.Navigator>
       </NavigationContainer>
