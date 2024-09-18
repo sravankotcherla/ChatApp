@@ -2,6 +2,7 @@ import { useNavigation } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -153,8 +154,11 @@ export const ChatsList = () => {
                       }
                     }}
                   >
-                    {item.img?.length ? (
-                      <Text>Got it </Text>
+                    {(item as Chats).user?.profileImg?.length ? (
+                      <Image
+                        source={{ uri: (item as Chats).user?.profileImg }}
+                        style={{ width: 32, height: 32, borderRadius: 16 }}
+                      />
                     ) : (
                       <FontAwesome5
                         name="user-circle"
@@ -271,8 +275,11 @@ export const ChatsList = () => {
                           });
                       }}
                     >
-                      {item.img?.length ? (
-                        <Text>Got it </Text>
+                      {(item as User).profileImg?.length ? (
+                        <Image
+                          source={{ uri: (item as User).profileImg }}
+                          style={{ width: 32, height: 32, borderRadius: 16 }}
+                        />
                       ) : (
                         <FontAwesome5
                           name="user-circle"
