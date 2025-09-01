@@ -14,4 +14,17 @@ This project demonstrates how to design and build a **real-time chat system** us
 - 📡 **Kafka Integration** – Event-driven architecture for reliable message delivery  
 - ⚡ **Redis** – Session management and caching  
 
-Note: Each microservice has its own dedicated README.md file within its folder. These files provide detailed information about the service’s purpose, architecture, setup instructions, and APIs.
+## 📖 Documentation
+
+This folder contains each microservice's dedicated `README.md` with details about:  
+- Purpose & responsibilities  
+- APIs & endpoints  
+- Architecture notes  
+
+You can also explore  each microservice codebase here:  
+
+- [Auth Service Repo](https://github.com/sravankotcherla/auth-service)  
+- [API Gateway Repo](https://github.com/sravankotcherla/ChatApp/blob/main/api-gateway)  
+- [Socket Service Repo](https://github.com/sravankotcherla/chatApp-socket-service)  
+- [Chat Service Repo](https://github.com/sravankotcherla/chatApp-chat-service)  
+- [Profile Service Repo](https://github.com/sravankotcherla/chatApp-user-service)  
