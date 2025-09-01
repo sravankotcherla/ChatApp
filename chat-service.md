@@ -1,185 +1,156 @@
-# Chat Service
+# Socket Service
 
-The **Chat Service** is the core messaging microservice for the Chat App.  
-It handles chat creation, message management, chat history, and provides RESTful APIs for chat functionality including individual and group chats, message persistence, and read status tracking.
+The **Socket Service** is the real-time WebSocket communication microservice for the Chat App.  
+It handles WebSocket connections, real-time message delivery, typing indicators, read receipts, and session management for instant messaging functionality.
 
 ---
 
 ## Repository
 
-**View Source Code:** [https://github.com/sravankotcherla/chatApp-chat-service](https://github.com/sravankotcherla/chatApp-chat-service)
+**View Source Code:** [https://github.com/sravankotcherla/chatApp-socket-service](https://github.com/sravankotcherla/chatApp-socket-service)
 
 ---
 
 ## Architecture Role
 
-- **Message Persistence Layer** that consumes message requests from Kafka
-- **Manages chat creation** and user group management
-- **Handles message storage** and retrieval using MongoDB
-- **Provides RESTful APIs** for chat history and management operations
-- **Integrates with Kafka** for event-driven message processing
-- **Supports both individual and group chats** with flexible configuration
-- **Event Publisher** that confirms message creation back to Kafka
+- **Real-time Communication Hub** for all microservices
+- **Manages WebSocket connections** and session persistence using Redis
+- **Handles real-time message delivery** and event broadcasting via Kafka
+- **Integrates with other services** for user authentication and message persistence
+- **Provides WebSocket endpoints** for client connections
 
 ---
 
-## REST API Endpoints and Functionality
+## WebSocket Endpoints and Event Management Flow
 
-### Chat Management Endpoints
+### `WS /ws` - WebSocket Connection Endpoint
 
-#### `GET /chat` - Retrieve User Chats
+- Establishes WebSocket connection with authentication
+- Handles connection lifecycle (open, close, error)
+- Manages user session mapping and persistence
 
-- **Headers:** `authenticated-user-id` (required)
-- **Response:** List of all chats for the authenticated user
-- **Functionality:** Returns chats with last message information and metadata
+### Event Types and Handling
 
-#### `POST /chat/create` - Create New Chat
+#### `CONNECTION_OPEN` - Connection Establishment
 
-- **Body:** List of user IDs to include in the chat
-- **Response:** Created chat object with generated ID
-- **Functionality:** Creates new individual or group chat sessions
+- Authenticates incoming WebSocket connections
+- Maps user ID to WebSocket session
+- Stores session in memory for real-time communication
 
-#### `GET /chat/{chatId}` - Get Specific Chat
+#### `SEND_MESSAGE` - Message Transmission
 
-- **Path:** `chatId` - Unique identifier for the chat
-- **Response:** Chat object with full details
-- **Functionality:** Retrieves specific chat information and metadata
+- Processes outgoing chat messages from WebSocket clients
+- Publishes messages to Kafka `message-requests` topic for Chat Service consumption
+- Waits for `message-created` confirmation from Chat Service
+- Broadcasts messages to intended recipients via WebSocket upon confirmation
+- Handles message delivery confirmation
 
-### Message Management Endpoints
+#### `MESSAGE_READ` - Read Receipts
 
-#### `POST /chat/message/create` - Send Message
+- Tracks message read status
+- Updates message delivery state
+- Notifies message sender of read confirmation
 
-- **Body:** `MessageDTO` containing message content and metadata
-- **Response:** Generated message ID
-- **Functionality:** Creates new message and updates chat's last message
+#### `TYPING` - Typing Indicators
 
-#### `PUT /chat/message/read` - Mark Messages as Read
+- Broadcasts real-time typing status
+- Shows when users are composing messages
+- Enhances user experience with live feedback
 
-- **Body:** List of message IDs to mark as read
-- **Response:** Success confirmation
-- **Functionality:** Updates message read status for delivery tracking
+#### `NEW_MESSAGE` - Message Reception
 
-#### `GET /chat/message/` - Retrieve Chat Messages
+- Consumes messages from Kafka `message-created` topic from Chat Service
+- Handles incoming message processing and confirmation
+- Routes messages to appropriate online recipients via WebSocket
+- Manages offline message queuing via Kafka persistence
+- Integrates with Chat Service for message status updates
 
-- **Query Parameters:**
-  - `chatId` - Chat identifier
-  - `skipNumber` - Pagination offset for message history
-- **Response:** List of messages for the specified chat
-- **Functionality:** Retrieves paginated message history with configurable offset
+#### `MESSAGE_DELIVERED` - Delivery Confirmation
 
----
+- Confirms message delivery to recipients
+- Updates message delivery timestamps
+- Provides delivery status feedback
 
-## Message Flow
+#### `CONNECTION_CLOSE` - Connection Termination
 
-### Real-time Message Processing Flow
-
-1. **Sender** sends message via WebSocket to Socket Service
-2. **Socket Service** publishes message request to Kafka topic (`message-requests`)
-3. **Chat Service** consumes message request from Kafka and creates message in MongoDB
-4. **Chat Service** publishes message creation confirmation to Kafka topic (`message-created`)
-5. **Socket Service** consumes confirmation and delivers message to receiver via WebSocket
-
-### Chat Retrieval Flow
-
-1. Client requests chats via `GET /chat` with user ID
-2. Service queries MongoDB for user's chat memberships
-3. Chats are populated with last message information
-4. Paginated results are returned to client
-
-### Message History Flow
-
-1. Client requests chat messages via `GET /chat/message/`
-2. Service retrieves messages with pagination support
-3. Messages are ordered by creation timestamp
-4. Paginated results are returned to client
-
----
-
-## Database Schema
-
-### MongoDB Collections
-
-#### `chats` Collection
-
-- Stores chat metadata and member information
-- Supports both individual and group chat types
-- Indexed on `members` field for efficient user chat queries
-
-**Fields:**
-
-- `_id`
-- `members`
-- `isGroup`
-- `groupName`
-- `groupDescription`
-- `groupProfilePic`
-- `lastMessage`
-- `createdAt`
-- `createdBy`
-
-#### `messages` Collection
-
-- Stores all message content and metadata
-- Indexed on `chatId` and `createdAt` for efficient retrieval
-- Supports message status tracking (SENT, DELIVERED, READ)
-
-**Fields:**
-
-- `_id`
-- `chatId`
-- `clientMessageId`
-- `messageType`
-- `content`
-- `senderId`
-- `createdAt`
-- `status`
-
-**Status Flow:** SENT → DELIVERED → READ
+- Cleans up user sessions on disconnect
+- Removes session mappings from memory
+- Handles graceful connection closure
 
 ---
 
 ## Tech Stack
 
 - **Java 21** with **Spring Boot 3.4.4**
-- **Spring Web** for RESTful API endpoints
-- **Spring Data MongoDB** for data persistence
-- **Spring Kafka** for event-driven messaging
-- **MongoDB** as the primary database
-- **Apache Kafka** for event streaming and message processing
+- **Spring WebSocket** for real-time communication
+- **Spring WebFlux** for reactive programming support
+- **Spring Kafka** for event streaming and message processing
+- **WebSocket Handlers** for connection management
+- **Event-driven Architecture** with **Kafka** for message processing
+- **Redis** for distributed session management
 - **Lombok** for code generation and boilerplate reduction
-- **Spring Cloud** for microservice architecture support
-- **Maven** for dependency management and build automation
+- **Jackson** for JSON message serialization
 - **Docker** for containerization
 
 ---
 
-## Kafka Integration
+## WebSocket Architecture
 
-### Event Topics
+The service implements a robust WebSocket architecture with the following components:
 
-#### `message-requests` (Input Topic)
+| Component                  | Description                                           |
+| -------------------------- | ----------------------------------------------------- |
+| `ChatWebSocketHandler`     | Main WebSocket message handler and connection manager |
+| `EventRegistry`            | Event routing and handler management system           |
+| `SessionDao`               | Redis-based session storage and user mapping          |
+| `WebSocketConfig`          | WebSocket endpoint configuration and setup            |
+| `WebSocketAuthInterceptor` | Authentication and connection validation              |
+| `Event Handlers`           | Specialized handlers for each event type              |
 
-- **Producer**: Socket Service
-- **Consumer**: Chat Service
-- **Purpose**: Receives message creation requests from real-time clients
-- **Data**: Message content, sender, recipient, chat ID, and metadata
+### Connection Flow
 
-#### `message-created` (Output Topic)
-
-- **Producer**: Chat Service
-- **Consumer**: Socket Service
-- **Purpose**: Confirms successful message creation and persistence
-- **Data**: Generated message ID, chat updates, and delivery confirmation
-
-### Event Flow Architecture
-
-```
-WebSocket Clients ↔ Socket Service ↔ Kafka ↔ Chat Service ↔ MongoDB
-```
-
-- **Real-time Communication**: Socket Service handles immediate WebSocket connections
-- **Message Persistence**: Chat Service ensures reliable storage and retrieval
-- **Event Sourcing**: Complete audit trail of message lifecycle
-- **Scalability**: Services can scale independently based on load
+1. **Client connects** to `/ws` endpoint
+2. **Authentication interceptor** validates user credentials
+3. **Session mapping** stores user ID to WebSocket session
+4. **Event registry** routes incoming messages to appropriate handlers
+5. **Real-time communication** enables instant message delivery
+6. **Session cleanup** on connection close
 
 ---
+
+## Message Flow
+
+### Outgoing Messages
+
+1. Client sends message via WebSocket
+2. Service processes message and publishes to Kafka `message-requests` topic
+3. Chat Service consumes request and persists message in MongoDB
+4. Chat Service publishes confirmation to `message-created` topic
+5. Socket Service consumes confirmation and delivers to recipient via WebSocket
+6. Delivery confirmation sent back to sender
+
+### Incoming Messages
+
+1. Service consumes message confirmations from Kafka `message-created` topic
+2. Routes messages to appropriate online user sessions via WebSocket
+3. Broadcasts typing indicators and read receipts
+4. Manages offline message queuing via Kafka persistence
+5. Integrates with Chat Service for message status management via Kafka events
+
+---
+
+## Session Management
+
+The service maintains active WebSocket sessions using Redis for distributed storage:
+
+- **Redis** for distributed session storage across multiple instances
+- **User ID to Session mapping** for direct message routing
+- **Automatic cleanup** on connection termination with TTL
+- **Session validation** for secure communication
+- **Horizontal scaling** support for multiple service instances
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
